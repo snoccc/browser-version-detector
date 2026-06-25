@@ -135,13 +135,14 @@ for (feature in features) {
 		`)
 	}
 	else {
+		// maybe put display:block instead (while its outside of viewport) and initially set iframes to display:none
 		css = css.concat(`/* ${feature} */
 			${test} {
 				[data-test="${i}"] {background:green}
-				${unsupported.map(version =>`#versions [data-version="${version}"]`).join(",") + "{background:red; display:none}"}
+				${unsupported.map(version =>`#versions [data-version="${version}"]`).join(",") + "{display:none}"}
 			}
 			${test.replace("@supports", "@supports not").replace("@media", "@media not")} {
-				${supported.map(version =>`#versions [data-version="${version}"]`).join(",") + "{background:red; display:none}"}
+				${supported.map(version =>`#versions [data-version="${version}"]`).join(",") + "{display:none}"}
 			}
 		`)
 	}
@@ -150,9 +151,13 @@ for (feature in features) {
 
 // exfiltrate with js, no csp (after 2 sec)
 js = js.concat(`
-	setTimeout(() => {
-		[...document.querySelectorAll("#versions iframe")].filter(el => getComputedStyle(el).getPropertyValue("display") === "block").forEach(el => location = '/' + el.dataset.version)
-	}, 2000)
+	var leak = new URLSearchParams(window.location.search).get("leak")
+	if (!leak) {
+		setTimeout(() => {
+			[...document.querySelectorAll("#versions iframe")].filter(el => getComputedStyle(el).getPropertyValue("display") === "block").forEach(el => location = '/?leak=' + el.dataset.version)
+		}, 2000)
+	}
+	
 `)
 
 
@@ -160,14 +165,13 @@ js = js.concat(`
 // correct version will be last dns request, increase animation duration for more delay
 css = css.concat(`
 #versions {
-  position:fixed;
-  left: -9999;
+  margin-left: -9999px;
   animation: show 0s linear 1s forwards;
 }
 
 @keyframes show {
   to {
-    left: 0;
+    margin-left: 0px;
   }
 }
 `)
@@ -178,5 +182,5 @@ ${versions.map((version, i) => `<iframe loading="lazy" src="https://${version}.$
 </div>
 `)
 
-html = `${html}<style>${css}</style><script defer>${js}</script>`
+html = `<style>${css}</style>${html}<script defer>${js}</script>`
 console.log(html)
